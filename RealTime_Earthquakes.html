@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta author="Luke Wylie">
+<meta content="Web Mapping Lab">
+<title> A Leaflet Project </title>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.css' rel='stylesheet' />
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script>
+zoomhburg = function() {
+       map.panTo(new L.LatLng(31.325, -89.330));
+       map.setZoom(13);
+}
+</script>
+
+<script>
+ function MagColor(x) {
+if (x < 2)
+  {return "#FFFF00";}
+else if (x  >= 2 && x <= 4)
+  {return "#FF9900";}
+else if (x > 4 && x <= 6)
+  {return "#FF3300";}
+else if (x > 6 && x <= 8)
+  {return "#FF0000";}
+else if (x > 8)
+  {return "#F8000";}
+}
+</script>
+<style type="text/css">
+#map {
+       height:700px;
+}
+body {background-color:grey}
+
+.wrapper {
+text-align:center;
+}
+
+.button {
+position:absolute;
+top: 50%;
+}
+</style>
+<head>
+
+<body>
+
+<div id="map"></div>
+
+
+   <script type='text/javascript'>
+  
+     var map = new L.Map('map').setView([40, -98], 4)
+     //Loads the stylized Stamen Toner Layer
+     var stamenLayer = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
+ attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.'
+}).addTo(map);
+
+     //Loads the OSM layer 
+     var osm = L.tileLayer('http://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
+});
+
+
+     //Loads Esri World Imagery
+     var Esri_WorldImagery = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IN, IGP, UPR-EGP, and the GIS User Community'});
+
+    //Loads Esri World Shaded Relief
+     var Esri_WorldShadedRelief = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
+  maxZoom: 13});
+
+
+var all_week = 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojsonp';
+
+
+$.ajax({
+  type: 'GET',
+   url: all_week,
+   async: false,
+   jsonpCallback: 'eqfeed_callback',
+   contentType: "application/json",
+   dataType: 'jsonp',
+   success: function(json) {
+      console.log(json);
+      addfeatures(json.features)
+      //$(json.features).each(function(i,feature) {console.log(feature)});
+   },
+   error: function(e) {
+      console.log(e.message);
+   }
+});
+
+   addfeatures = function(data)  {
+     L.geoJson(data, {
+           pointToLayer: function (feature, latlng) {
+             mags = (feature.properties.mag * feature.properties.mag) / 2
+             return L.circleMarker(latlng, {opacity:1,fillOpacity:0.6, weight:mags, color:MagColor(feature.properties.mag), radius:feature.properties.mag*3
+})
+           },
+           onEachFeature: function (feature, layer) {
+                           layer.bindPopup(feature.properties.place + " <br><b>Magnitude: </b>" + feature.properties.mag);}
+                         })
+   }
+
+   //Loads the Nextad wms layer 
+   var nexrad = L.tileLayer.wms("http://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi", {
+   layers: 'nexrad-n0r-900913',
+   format: 'image/png',
+   transparent: true,
+   attribution: "Weather data Ã¯Â¿Â½Ã¯Â¿Â½ 2012 IEM Nexrad"
+});
+
+
+//Loads the Population layer
+   var poplyr = L.tileLayer.wms( "http://sedac.ciesin.columbia.edu/geoserver/wms",
+{layers: 'gpw-v3:gpw-v3-population-density_2000',
+  format: 'image/png',
+  transparent: true});
+
+//Groups the overlay maps
+var overlayMaps = {
+  "population Density":poplyr,
+  "Nexrad Weather":nexrad,
+};
+
+//Groups the basemaps layer
+var baseMaps = { 
+"Stamen Layer": stamenLayer,
+"Open Street Map": osm,
+"ESRI World Imagery": Esri_WorldImagery,
+"ESRI Shaded Relief": Esri_WorldShadedRelief,
+};
+
+//Control Layer for turning layers on/off
+L.control.layers(baseMaps, overlayMaps).addTo(map);
+  
+   </script>
+
+
+<select name = "setviews" id = "setviews" onchange = "zoom()">
+  <option value = "zoomna">Zoom to North America</option>
+  <option value = "zoomsa"> Zoom to South America</option>
+  <option value = "zoomanta"> Zoom to Antartica</option>
+  <option value = "zoomeurope"> Zoom to Europe </option>
+  <option value = "zoomafrica"> Zoom to Africa</option>
+  <option value = "zoomasia">Zoom to Asia</option>
+  <option value = "zoomaust"> Zoom to Australia</option>
+</select>
+
+<select name = "eq_selection" id= "eq_selection" onchange = "onchange_action()">
+  <option>Choose a time to view Earthquakes</option>
+  <option value = "past_day">Earthquakes in the past day</option>
+  <option value = "past_hour">Earthquakes in the past hour</option>
+  <option value = "past_week"> Earthquakes in the past week </option>
+  <option value = "past month"> Earthquakes in the past month </option>
+</select> 
+
+<!-- Loads in the earthquakes jsonp based on the selection in the dropdown -->
+<script>
+function onchange_action()
+{
+    var e = document.getElementById("eq_selection").value;
+    console.log(e)
+    if (e == "past_day"){
+ 
+$.ajax({
+
+  type: 'GET',
+   url: 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojsonp',
+   async: false,
+   jsonpCallback: 'eqfeed_callback',
+   contentType: "application/json",
+   dataType: 'jsonp',
+   success: function(json) {
+      console.log(json);
+      addfeatures(json.features)
+      //$(json.features).each(function(i,feature) {console.log(feature)});
+   },
+   error: function(e) {
+      console.log(e.message);
+   }
+});
+
+   addfeatures = function(data)  {
+     L.geoJson(data, {
+           pointToLayer: function (feature, latlng) {
+             mags = (feature.properties.mag * feature.properties.mag) / 2
+             return L.circleMarker(latlng, {opacity:1,fillOpacity:0.6, weight:mags, color:MagColor(feature.properties.mag), radius:feature.properties.mag*3
+})
+           },
+           onEachFeature: function (feature, layer) {
+                           layer.bindPopup(feature.properties.place + " <br><b>Magnitude: </b>" + feature.properties.mag);}
+                         }).addTo(map);
+   }
+
+} 
+if (e == "past_hour"){
+ 
+$.ajax({
+
+  type: 'GET',
+   url: 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojsonp',
+   async: false,
+   jsonpCallback: 'eqfeed_callback',
+   contentType: "application/json",
+   dataType: 'jsonp',
+   success: function(json) {
+      console.log(json);
+      addfeatures(json.features)
+      //$(json.features).each(function(i,feature) {console.log(feature)});
+   },
+   error: function(e) {
+      console.log(e.message);
+   }
+});
+
+   addfeatures = function(data)  {
+     L.geoJson(data, {
+           pointToLayer: function (feature, latlng) {
+             mags = (feature.properties.mag * feature.properties.mag) / 2
+             return L.circleMarker(latlng, {opacity:1,fillOpacity:0.6, weight:mags, color:MagColor(feature.properties.mag), radius:feature.properties.mag*3
+})
+           },
+           onEachFeature: function (feature, layer) {
+                           layer.bindPopup(feature.properties.place + " <br><b>Magnitude: </b>" + feature.properties.mag);}
+                         }).addTo(map);
+   }
+
+}
+if (e == "past_week"){
+ 
+$.ajax({
+
+  type: 'GET',
+   url: 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojsonp',
+   async: false,
+   jsonpCallback: 'eqfeed_callback',
+   contentType: "application/json",
+   dataType: 'jsonp',
+   success: function(json) {
+      console.log(json);
+      addfeatures(json.features)
+      //$(json.features).each(function(i,feature) {console.log(feature)});
+   },
+   error: function(e) {
+      console.log(e.message);
+   }
+});
+
+   addfeatures = function(data)  {
+     L.geoJson(data, {
+           pointToLayer: function (feature, latlng) {
+             mags = (feature.properties.mag * feature.properties.mag) / 2
+             return L.circleMarker(latlng, {opacity:1,fillOpacity:0.6, weight:mags, color:MagColor(feature.properties.mag), radius:feature.properties.mag*3
+})
+           },
+           onEachFeature: function (feature, layer) {
+                           layer.bindPopup(feature.properties.place + " <br><b>Magnitude: </b>" + feature.properties.mag);}
+                         }).addTo(map);
+   }
+
+}
+if (e == "past_month"){
+ 
+$.ajax({
+
+  type: 'GET',
+   url: 'http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojsonp',
+   async: false,
+   jsonpCallback: 'eqfeed_callback',
+   contentType: "application/json",
+   dataType: 'jsonp',
+   success: function(json) {
+      console.log(json);
+      addfeatures(json.features)
+      //$(json.features).each(function(i,feature) {console.log(feature)});
+   },
+   error: function(e) {
+      console.log(e.message);
+   }
+});
+
+   addfeatures = function(data)  {
+     L.geoJson(data, {
+           pointToLayer: function (feature, latlng) {
+             mags = (feature.properties.mag * feature.properties.mag) / 2
+             return L.circleMarker(latlng, {opacity:1,fillOpacity:0.6, weight:mags, color:MagColor(feature.properties.mag), radius:feature.properties.mag*3
+})
+           },
+           onEachFeature: function (feature, layer) {
+                           layer.bindPopup(feature.properties.place + " <br><b>Magnitude: </b>" + feature.properties.mag);}
+                         }).addTo(map);
+   }
+
+}
+
+
+}
+
+</script>
+
+<!-- Loads the zoom functions -->
+<script>
+function zoom(){
+
+var i = document.getElementById("setviews").value
+
+if (i == "zoomna"){
+  map.setView([40, -98], 4);
+}
+if (i == "zoomsa"){
+  map.setView([-10.0, -59], 3);
+}
+if (i == "zoomanta"){
+  map.setView([-70.0, 0.0], 3);
+}
+if (i == "zoomeurope"){
+  map.setView([46.2, 7.0], 4);
+}
+if (i == "zoomafrica"){
+  map.setView([7.1, 21.1], 3);
+}
+if (i == "zoomasia"){
+  map.setView([57.7, 104.3], 3);
+}
+if (i == "zoomaust"){
+  map.setView([-25.1, 134], 5);
+}
+ 
+ }
+</script>
+<footer>
+
+
+Luke Wylie
+GHY 516
+Spring 2014
+</footer>
+</body>
+</html>
